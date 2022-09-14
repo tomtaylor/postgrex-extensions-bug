@@ -27,7 +27,8 @@ defmodule Migration1 do
   use Ecto.Migration
 
   def up do
-    execute "SET search_path = public,heroku_ext"
+    execute("SET search_path = public,heroku_ext")
+
     create table(:users) do
       add(:email, :citext, null: false)
     end
@@ -42,15 +43,27 @@ defmodule User do
   end
 end
 
-children = [
-  Repo
-]
+defmodule Main do
+  def main() do
+    children = [
+      Repo
+    ]
 
-_ = Repo.__adapter__().storage_down(Repo.config())
-:ok = Repo.__adapter__().storage_up(Repo.config())
+    _ = Repo.__adapter__().storage_down(Repo.config())
+    :ok = Repo.__adapter__().storage_up(Repo.config())
 
-{:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
+    {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
 
-Ecto.Migrator.run(Repo, [{0, Migration0}, {1, Migration1}], :up, all: true, log_migrations_sql: :debug)
+    Ecto.Migrator.run(Repo, [{0, Migration0}, {1, Migration1}], :up,
+      all: true,
+      log_migrations_sql: :debug
+    )
 
-IO.inspect(Repo.all(User))
+    %User{email: "foo@bar.com"}
+    |> Repo.insert!()
+
+    IO.inspect(Repo.all(User))
+  end
+end
+
+Main.main()
